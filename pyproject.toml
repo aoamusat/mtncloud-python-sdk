@@ -23,7 +23,7 @@ keywords = [
     "infrastructure",
     "devops",
     "cloud-management",
-    "mtn-cloud-python"    
+    "mtncloud-python-sdk"    
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -64,10 +64,10 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/aoamusat/mtn-cloud-python"
-Documentation = "https://github.com/aoamusat/mtn-cloud-python#readme"
-Repository = "https://github.com/aoamusat/mtn-cloud-python"
-Issues = "https://github.com/aoamusat/mtn-cloud-python/issues"
+Homepage = "https://github.com/aoamusat/mtncloud-python-sdk"
+Documentation = "https://github.com/aoamusat/mtncloud-python-sdk#readme"
+Repository = "https://github.com/aoamusat/mtncloud-python-sdk"
+Issues = "https://github.com/aoamusat/mtncloud-python-sdk/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/mtn_cloud"]

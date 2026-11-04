@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from mtn_cloud._version import __version__
 
-DEFAULT_USER_AGENT = f"mtn-cloud-python/{__version__}"
+DEFAULT_USER_AGENT = f"mtncloud-python-sdk/{__version__}"
 
 
 class MTNCloudConfig(BaseSettings):

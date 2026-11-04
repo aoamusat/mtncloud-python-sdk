@@ -92,7 +92,7 @@ Supported settings include:
 | `MTN_CLOUD_MAX_RETRIES` | `3` | Retries for retryable idempotent requests |
 | `MTN_CLOUD_RETRY_DELAY` | `0.5` | Base retry delay in seconds |
 | `MTN_CLOUD_VERIFY_SSL` | `true` | TLS certificate verification |
-| `MTN_CLOUD_USER_AGENT` | `mtn-cloud-python/0.1.0` | HTTP user-agent value |
+| `MTN_CLOUD_USER_AGENT` | `mtncloud-python-sdk/0.1.0` | HTTP user-agent value |
 
 Explicit constructor values take precedence over environment values:
 

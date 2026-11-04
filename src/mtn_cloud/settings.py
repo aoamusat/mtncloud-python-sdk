@@ -4,7 +4,7 @@ from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 DEFAULT_BASE_URL = "https://console.cloud.mtn.ng"
-DEFAULT_USER_AGENT = "mtn-cloud-python/0.1.0"
+DEFAULT_USER_AGENT = "mtncloud-python-sdk/0.1.0"
 
 
 class ClientSettings(BaseSettings):
@@ -55,7 +55,9 @@ class ClientSettings(BaseSettings):
     def validate_user_agent(cls, value: str) -> str:
         value = value.strip()
         if not value or "\r" in value or "\n" in value:
-            raise ValueError("user_agent must be non-empty and cannot contain line breaks")
+            raise ValueError(
+                "user_agent must be non-empty and cannot contain line breaks"
+            )
         return value
 
     @property
