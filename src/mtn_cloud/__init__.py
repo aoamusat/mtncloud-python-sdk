@@ -5,6 +5,7 @@ from mtn_cloud.client import MTNCloud
 from mtn_cloud.config import MTNCloudConfig
 from mtn_cloud.modern_client import MtnCloudClient
 from mtn_cloud.modern_exceptions import MtnCloudError
+from mtn_cloud.modern_exceptions import TimeoutError as ModernTimeoutError
 from mtn_cloud.settings import ClientSettings
 from mtn_cloud.exceptions import (
     AuthenticationError,
@@ -26,6 +27,7 @@ __all__ = [
     "MTNCloud",
     "MtnCloudClient",
     "MtnCloudError",
+    "ModernTimeoutError",
     # Configuration
     "MTNCloudConfig",
     "ClientSettings",

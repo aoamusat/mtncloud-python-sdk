@@ -44,3 +44,11 @@ class RateLimitError(MtnCloudError):
 
 class ServerError(MtnCloudError):
     """The service returned a server-side error."""
+
+
+class TimeoutError(MtnCloudError):
+    """An operation did not reach its target state before its deadline."""
+
+    def __init__(self, message: str, *, timeout: float, **kwargs: Any) -> None:
+        super().__init__(message, **kwargs)
+        self.timeout = timeout

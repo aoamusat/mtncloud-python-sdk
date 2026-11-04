@@ -4,6 +4,7 @@ import pytest
 
 from mtn_cloud import ClientSettings, MtnCloudClient
 from mtn_cloud.models.instance import InstanceCreate, InstanceUpdate
+from mtn_cloud.modern_exceptions import TimeoutError as ModernTimeoutError
 from mtn_cloud.modern_exceptions import AuthenticationError
 from mtn_cloud.transport import HttpResponse
 
@@ -254,3 +255,60 @@ def test_instances_service_update_uses_put() -> None:
 
     assert instance.name == "web-renamed"
     assert transport.request.call_args.args[:2] == ("PUT", "/instances/100")
+
+
+def test_instances_service_action_refreshes_instance() -> None:
+    transport = Mock()
+    transport.request.side_effect = [
+        HttpResponse(202, {}, {}),
+        HttpResponse(200, {}, {"instance": {"id": 100, "status": "running"}}),
+    ]
+    client = MtnCloudClient(token="secret", transport=transport)
+
+    instance = client.instances.start(100)
+
+    assert instance.is_running is True
+    assert transport.request.call_args_list[0].args[:2] == ("PUT", "/instances/100/start")
+    assert transport.request.call_args_list[1].args[:2] == ("GET", "/instances/100")
+
+
+def test_instances_service_waiter_uses_monotonic_deadline() -> None:
+    transport = Mock()
+    transport.request.side_effect = [
+        HttpResponse(200, {}, {"instance": {"id": 100, "status": "provisioning"}}),
+        HttpResponse(200, {}, {"instance": {"id": 100, "status": "running"}}),
+    ]
+    clock_values = iter([0.0, 1.0, 2.0])
+    sleeper = Mock()
+    client = MtnCloudClient(
+        token="secret",
+        transport=transport,
+        sleeper=sleeper,
+        clock=lambda: next(clock_values),
+    )
+
+    instance = client.instances.wait_until_running(100, timeout=10, poll_interval=5)
+
+    assert instance.status == "running"
+    sleeper.assert_called_once_with(5)
+
+
+def test_instances_service_waiter_raises_typed_timeout() -> None:
+    transport = Mock()
+    transport.request.return_value = HttpResponse(
+        200,
+        {},
+        {"instance": {"id": 100, "status": "provisioning"}},
+    )
+    clock_values = iter([0.0, 2.0])
+    client = MtnCloudClient(
+        token="secret",
+        transport=transport,
+        sleeper=Mock(),
+        clock=lambda: next(clock_values),
+    )
+
+    with pytest.raises(ModernTimeoutError) as raised:
+        client.instances.wait_until_running(100, timeout=1, poll_interval=5)
+
+    assert raised.value.timeout == 1

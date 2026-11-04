@@ -1,5 +1,6 @@
 """Modern MTN Cloud client foundation."""
 
+import time
 from typing import Any
 
 from mtn_cloud.auth import CredentialProvider
@@ -31,15 +32,18 @@ class MtnCloudClient:
         transport: Transport | None = None,
         credentials: CredentialProvider | None = None,
         sleeper: Any | None = None,
+        clock: Any | None = None,
     ) -> None:
         if settings is not None and token is not None:
             raise ValueError("Pass either settings or token, not both")
         self._settings = settings or ClientSettings(token=token)
+        self._sleeper = sleeper or time.sleep
+        self._clock = clock or time.monotonic
         self._core = CoreClient(
             self._settings,
             transport=transport,
             credentials=credentials,
-            **({"sleeper": sleeper} if sleeper is not None else {}),
+            sleeper=self._sleeper,
         )
         self._zones: ZonesService | None = None
         self._groups: GroupsService | None = None
@@ -81,7 +85,11 @@ class MtnCloudClient:
         """Access compute instances."""
 
         if self._instances is None:
-            self._instances = InstancesService(self._core)
+            self._instances = InstancesService(
+                self._core,
+                sleeper=self._sleeper,
+                clock=self._clock,
+            )
         return self._instances
 
     @property

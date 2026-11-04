@@ -1,10 +1,12 @@
 """Modern service for MTN Cloud compute instances."""
 
+import time
+from collections.abc import Callable
 from typing import Any
 
 from mtn_cloud.core import CoreClient
 from mtn_cloud.models.instance import Instance, InstanceCreate, InstanceUpdate
-from mtn_cloud.modern_exceptions import MtnCloudError
+from mtn_cloud.modern_exceptions import MtnCloudError, TimeoutError
 from mtn_cloud.services.base import Page, Service
 
 
@@ -15,6 +17,17 @@ class InstancesService(Service[Instance]):
     item_key = "instance"
     list_key = "instances"
     model = Instance
+
+    def __init__(
+        self,
+        core: CoreClient,
+        *,
+        sleeper: Callable[[float], None] = time.sleep,
+        clock: Callable[[], float] = time.monotonic,
+    ) -> None:
+        super().__init__(core)
+        self._sleeper = sleeper
+        self._clock = clock
 
     def list_page(
         self,
@@ -68,6 +81,82 @@ class InstancesService(Service[Instance]):
             params=params or None,
         )
         return True
+
+    def start(self, instance_id: int) -> Instance:
+        return self._action(instance_id, "start")
+
+    def stop(self, instance_id: int) -> Instance:
+        return self._action(instance_id, "stop")
+
+    def restart(self, instance_id: int) -> Instance:
+        return self._action(instance_id, "restart")
+
+    def suspend(self, instance_id: int) -> Instance:
+        return self._action(instance_id, "suspend")
+
+    def _action(self, instance_id: int, action: str) -> Instance:
+        self._core.request("PUT", f"{self.path}/{instance_id}/{action}")
+        return self.get(instance_id)
+
+    def wait_for_status(
+        self,
+        instance_id: int,
+        target_status: str,
+        *,
+        timeout: float = 300,
+        poll_interval: float = 5,
+    ) -> Instance:
+        if timeout <= 0:
+            raise ValueError("timeout must be greater than zero")
+        if poll_interval < 0:
+            raise ValueError("poll_interval cannot be negative")
+
+        target = target_status.strip().lower()
+        deadline = self._clock() + timeout
+        while True:
+            instance = self.get(instance_id)
+            current = instance.status.lower()
+            if current == target:
+                return instance
+            if current == "failed":
+                raise MtnCloudError(
+                    f"Instance {instance_id} entered failed state: {instance.status_message}"
+                )
+            remaining = deadline - self._clock()
+            if remaining <= 0:
+                raise TimeoutError(
+                    f"Timed out waiting for instance {instance_id} to reach '{target}'",
+                    timeout=timeout,
+                )
+            self._sleeper(min(poll_interval, remaining))
+
+    def wait_until_running(
+        self,
+        instance_id: int,
+        *,
+        timeout: float = 300,
+        poll_interval: float = 5,
+    ) -> Instance:
+        return self.wait_for_status(
+            instance_id,
+            "running",
+            timeout=timeout,
+            poll_interval=poll_interval,
+        )
+
+    def wait_until_stopped(
+        self,
+        instance_id: int,
+        *,
+        timeout: float = 300,
+        poll_interval: float = 5,
+    ) -> Instance:
+        return self.wait_for_status(
+            instance_id,
+            "stopped",
+            timeout=timeout,
+            poll_interval=poll_interval,
+        )
 
     def _parse_item(self, body: Any) -> Instance:
         if not isinstance(body, dict):
