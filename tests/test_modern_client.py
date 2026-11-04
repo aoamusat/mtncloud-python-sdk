@@ -90,3 +90,38 @@ def test_mutating_requests_are_not_automatically_retried() -> None:
         client._core.request("POST", "/instances", json={"name": "demo"})
 
     transport.request.assert_called_once()
+
+
+def test_zones_service_parses_typed_pages() -> None:
+    transport = Mock()
+    transport.request.return_value = HttpResponse(
+        200,
+        {},
+        {
+            "zones": [{"id": 1, "name": "MTNNG_CLOUD_AZ_1", "cloudType": "openstack"}],
+            "meta": {"offset": 0, "max": 25, "total": 1},
+        },
+    )
+    client = MtnCloudClient(token="secret", transport=transport)
+
+    page = client.zones.list_page(limit=25, type_code="openstack")
+
+    assert page.items[0].name == "MTNNG_CLOUD_AZ_1"
+    assert page.total == 1
+    assert page.has_more is False
+    assert transport.request.call_args.kwargs["params"] == {"max": 25, "offset": 0, "type": "openstack"}
+
+
+def test_groups_service_gets_wrapped_resource() -> None:
+    transport = Mock()
+    transport.request.return_value = HttpResponse(
+        200,
+        {},
+        {"group": {"id": 7, "name": "project-a", "active": True}},
+    )
+    client = MtnCloudClient(token="secret", transport=transport)
+
+    group = client.groups.get(7)
+
+    assert group.id == 7
+    assert group.name == "project-a"

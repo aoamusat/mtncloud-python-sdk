@@ -5,6 +5,8 @@ from typing import Any
 from mtn_cloud.auth import CredentialProvider
 from mtn_cloud.core import CoreClient
 from mtn_cloud.models.user import User
+from mtn_cloud.services.groups import GroupsService
+from mtn_cloud.services.zones import ZonesService
 from mtn_cloud.settings import ClientSettings
 from mtn_cloud.transport import Transport
 
@@ -35,10 +37,28 @@ class MtnCloudClient:
             credentials=credentials,
             **({"sleeper": sleeper} if sleeper is not None else {}),
         )
+        self._zones: ZonesService | None = None
+        self._groups: GroupsService | None = None
 
     @property
     def settings(self) -> ClientSettings:
         return self._settings
+
+    @property
+    def zones(self) -> ZonesService:
+        """Access deployment zones / regions."""
+
+        if self._zones is None:
+            self._zones = ZonesService(self._core)
+        return self._zones
+
+    @property
+    def groups(self) -> GroupsService:
+        """Access tenant groups / projects."""
+
+        if self._groups is None:
+            self._groups = GroupsService(self._core)
+        return self._groups
 
     def whoami(self) -> User:
         """Return the authenticated control-plane user."""
