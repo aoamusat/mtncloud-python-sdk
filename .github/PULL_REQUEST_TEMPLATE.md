@@ -1,25 +1,49 @@
-# Pull Request
+## Summary
 
-## Description
-Brief description of what this PR does.
+<!-- What does this change do, and why is it needed? -->
 
-## Type of Change
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] Documentation update
+## Change type
 
-## Checklist
-- [ ] My code follows the project's code style
-- [ ] I have run `ruff check` and `ruff format`
-- [ ] I have run `mypy` and fixed any type errors
-- [ ] I have added tests that prove my fix is effective or that my feature works
-- [ ] I have updated the documentation accordingly
-- [ ] All new and existing tests pass
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Refactor
+- [ ] Documentation
+- [ ] Tests or CI/CD
+- [ ] Breaking change
 
-## Related Issues
-Fixes #(issue number)
+## API and compatibility impact
 
-## Additional Notes
-Any additional information that reviewers should know.
+- Affected public APIs:
+- Backward compatibility impact:
+- MTN Cloud endpoints or response contracts changed:
+- Any destructive or mutating behavior:
 
+## Verification
+
+- [ ] Unit tests added or updated
+- [ ] `uv run pytest -q`
+- [ ] `uv run ruff format --check .`
+- [ ] `uv run ruff check .`
+- [ ] `uv run mypy src/mtn_cloud`
+- [ ] `uv build`
+- [ ] `git diff --check`
+- [ ] Live tests were not run, or their scope is described below
+
+## Security and secrets
+
+- [ ] No credentials, tokens, private tenant data, or sensitive logs are included
+- [ ] Any new GitHub permissions or secrets are justified
+
+## Documentation
+
+- [ ] README or relevant documentation updated
+- [ ] `CHANGELOG.md` updated for user-visible changes
+- [ ] Migration notes included for breaking changes
+
+## Related issues
+
+<!-- Use "Fixes #123" when this PR closes an issue. -->
+
+## Reviewer notes
+
+<!-- Call out risky areas, rollout considerations, or follow-up work. -->

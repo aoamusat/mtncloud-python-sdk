@@ -1,36 +1,48 @@
-# Dependabot configuration
-# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
-
 version: 2
+
 updates:
-  # Python dependencies
-  - package-ecosystem: "pip"
+  - package-ecosystem: pip
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Africa/Lagos
+    versioning-strategy: increase
     open-pull-requests-limit: 10
     labels:
-      - "dependencies"
-      - "python"
+      - dependencies
+      - python
+    commit-message:
+      prefix: chore
+      include: scope
     groups:
-      python-security:
-        applies-to: security-updates
+      python-runtime:
         patterns:
-          - "*"
+          - pydantic
+          - pydantic-settings
+          - requests
+          - typing-extensions
+          - urllib3
+      python-development:
+        patterns:
+          - pytest*
+          - ruff
+          - mypy
+          - types-requests
+          - coverage*
 
-  # GitHub Actions
-  - package-ecosystem: "github-actions"
+  - package-ecosystem: github-actions
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: monthly
+      day: monday
+      time: "09:30"
+      timezone: Africa/Lagos
     open-pull-requests-limit: 5
     labels:
-      - "dependencies"
-      - "github-actions"
-    groups:
-      github-actions-security:
-        applies-to: security-updates
-        patterns:
-          - "*"
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: ci
+      include: scope

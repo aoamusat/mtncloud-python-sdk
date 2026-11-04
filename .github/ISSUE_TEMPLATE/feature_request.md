@@ -1,30 +1,37 @@
 ---
 name: Feature request
-about: Suggest an idea for this project
-title: '[FEATURE] '
-labels: enhancement
-assignees: ''
+about: Propose an improvement or an additional MTN Cloud API service
+title: "feat: "
+labels: ["enhancement", "triage"]
+assignees: []
 ---
 
-## Is your feature request related to a problem?
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+## Problem and motivation
 
-## Describe the solution you'd like
-A clear and concise description of what you want to happen.
+<!-- What problem would this solve? Who needs it? -->
 
-## Proposed API
-How would you like to use this feature?
+## Proposed solution
+
+<!-- Describe the desired behavior and any relevant MTN Cloud endpoints. -->
+
+## Proposed Python API
 
 ```python
-from mtn_cloud import MTNCloud
+from mtn_cloud import MtnCloudClient
 
-cloud = MTNCloud(token="xxx")
-# How you'd like to use the feature
+with MtnCloudClient() as cloud:
+    # Proposed usage.
+    pass
 ```
 
-## Describe alternatives you've considered
-A clear and concise description of any alternative solutions or features you've considered.
+## API contract evidence
+
+- Documentation link:
+- Endpoint(s):
+- Request/response examples, redacted:
+- Required permissions or client type:
+- Known asynchronous or destructive behavior:
+
+## Alternatives considered
 
 ## Additional context
-Add any other context or screenshots about the feature request here.
-

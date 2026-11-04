@@ -1,4 +1,11 @@
-/.github/workflows/ @aoamusat
-/.github/dependabot.yml @aoamusat
+# Default owner for all repository changes.
+* @aoamusat
+
+# Security-sensitive and release-related files require explicit review.
+/.github/ @aoamusat
 /pyproject.toml @aoamusat
-/src/mtn_cloud/ @aoamusat
+/uv.lock @aoamusat
+/src/mtn_cloud/auth/ @aoamusat
+/src/mtn_cloud/core.py @aoamusat
+/src/mtn_cloud/modern_client.py @aoamusat
+/src/mtn_cloud/transport/ @aoamusat

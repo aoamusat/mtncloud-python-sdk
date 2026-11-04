@@ -1,23 +1,52 @@
-# Security Policy
+# Security policy
 
-## Supported Versions
+## Supported versions
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 0.x.x   | :white_check_mark: |
+| Version | Security support |
+| --- | --- |
+| `0.1.x` | Supported |
+| Older versions | Upgrade recommended |
 
-## Reporting a Vulnerability
+Security fixes are prioritized for the latest release line. Because the SDK
+is pre-`1.0`, users should upgrade promptly when a patched version is made
+available.
 
-If you discover a security vulnerability within this project, please report it by:
+## Reporting a vulnerability in this SDK
 
-1. **DO NOT** open a public issue
-2. Email the maintainer directly at m@rvellous.com
-3. Include a detailed description of the vulnerability
-4. Allow up to 48 hours for an initial response
+Please do not open a public GitHub issue for a suspected vulnerability.
 
-We take security seriously and will respond as quickly as possible to address any issues.
+Preferred channel:
 
-## MTN Cloud Service Issues
+1. Use GitHub's private vulnerability reporting feature for this repository,
+   if enabled.
+2. Otherwise email the maintainer at `hello@a4m.dev` with the subject
+   `[SECURITY] mtncloud-python-sdk`.
 
-If you discover a security vulnerability with the MTN Cloud service itself (not this SDK), please contact MTN directly at letstalk.ng@mtn.com.
+Include:
 
+- A concise description of the vulnerability and its impact
+- Affected versions and supported Python versions
+- Reproduction steps or a minimal proof of concept
+- Any required configuration or permissions
+- A suggested mitigation, if known
+
+Do not include real API keys, refresh tokens, authorization headers, or
+unredacted tenant data. Use placeholders in all examples.
+
+You can expect an acknowledgement within 48 hours. We will coordinate a fix,
+release, and disclosure timeline with the reporter where appropriate.
+
+## MTN Cloud service vulnerabilities
+
+Report vulnerabilities in the MTN Cloud service itself directly to MTN through
+its official security or support channels. This repository cannot remediate
+service-side vulnerabilities.
+
+## Dependency and credential safety
+
+- Credentials must be supplied through environment variables or a secret
+  manager, never committed to source control.
+- Live mutation tests are opt-in and require a separate explicit guard.
+- CI workflows use read-only repository permissions by default.
+- Pull requests must not include secrets in logs, fixtures, screenshots, or
+  issue comments.

@@ -1,40 +1,53 @@
 ---
 name: Bug report
-about: Create a report to help us improve
-title: '[BUG] '
-labels: bug
-assignees: ''
+about: Report a reproducible defect in the SDK
+title: "bug: "
+labels: ["bug", "triage"]
+assignees: []
 ---
 
-## Description
-A clear and concise description of what the bug is.
+## Summary
 
-## To Reproduce
-Steps to reproduce the behavior:
+<!-- What went wrong? Please describe the observed behavior precisely. -->
+
+## Reproduction
 
 ```python
-from mtn_cloud import MTNCloud
+from mtn_cloud import MtnCloudClient
 
-cloud = MTNCloud(token="xxx")
-# Code that causes the bug
+with MtnCloudClient(token="REDACTED") as cloud:
+    # Minimal reproduction here.
+    pass
 ```
+
+<!-- Remove credentials and tenant-specific identifiers before submitting. -->
 
 ## Expected behavior
-A clear and concise description of what you expected to happen.
 
 ## Actual behavior
-What actually happened.
+
+## API context
+
+- Endpoint or SDK operation:
+- HTTP status code:
+- Request ID, if available:
+- Was this a read-only or mutating operation?
+- Was the credential a `morph-api` client or another client type?
 
 ## Environment
-- OS: [e.g., macOS 14.0, Ubuntu 22.04, Windows 11]
-- Python version: [e.g., 3.12.0]
-- mtn-cloud version: [e.g., 0.1.0]
+
+- SDK version:
+- Python version:
+- Operating system:
+- Installation method (`uv`, pip, source checkout):
+
+## Logs and traceback
+
+```text
+Paste a redacted traceback or response here.
+Do not include API keys, refresh tokens, authorization headers, or private IPs.
+```
 
 ## Additional context
-Add any other context about the problem here.
 
-## Logs/Traceback
-```
-Paste any error messages or tracebacks here
-```
-
+<!-- Include a sanitized response shape, relevant configuration, or links. -->
