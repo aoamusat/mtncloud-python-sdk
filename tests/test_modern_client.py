@@ -169,3 +169,29 @@ def test_plans_service_parses_resource_sizes() -> None:
 
     assert plan.cores == 2
     assert plan.memory_gb == 4
+
+
+def test_resource_pools_filter_non_selectable_group_rows() -> None:
+    transport = Mock()
+    transport.request.return_value = HttpResponse(
+        200,
+        {},
+        {
+            "data": [
+                {"isGroup": True, "name": "OpenStack"},
+                {"id": 214, "value": "pool-214", "name": "project-a", "isDefault": True},
+            ]
+        },
+    )
+    client = MtnCloudClient(token="secret", transport=transport)
+
+    pools = client.resource_pools.list(zone_id=4, group_id=621)
+
+    assert len(pools) == 1
+    assert pools[0].code == "pool-214"
+    assert pools[0].is_default is True
+    assert transport.request.call_args.kwargs["params"] == {
+        "cloudId": 4,
+        "groupId": 621,
+        "provisionTypeCode": "openstack",
+    }

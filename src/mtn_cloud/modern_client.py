@@ -8,6 +8,7 @@ from mtn_cloud.models.user import User
 from mtn_cloud.services.groups import GroupsService
 from mtn_cloud.services.instance_types import InstanceTypesService
 from mtn_cloud.services.plans import PlansService
+from mtn_cloud.services.resource_pools import ResourcePoolsService
 from mtn_cloud.services.zones import ZonesService
 from mtn_cloud.settings import ClientSettings
 from mtn_cloud.transport import Transport
@@ -43,6 +44,7 @@ class MtnCloudClient:
         self._groups: GroupsService | None = None
         self._instance_types: InstanceTypesService | None = None
         self._plans: PlansService | None = None
+        self._resource_pools: ResourcePoolsService | None = None
 
     @property
     def settings(self) -> ClientSettings:
@@ -79,6 +81,14 @@ class MtnCloudClient:
         if self._plans is None:
             self._plans = PlansService(self._core)
         return self._plans
+
+    @property
+    def resource_pools(self) -> ResourcePoolsService:
+        """Access placement pools used during instance provisioning."""
+
+        if self._resource_pools is None:
+            self._resource_pools = ResourcePoolsService(self._core)
+        return self._resource_pools
 
     def whoami(self) -> User:
         """Return the authenticated control-plane user."""
