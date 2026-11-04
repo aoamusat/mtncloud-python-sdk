@@ -4,6 +4,7 @@ import pytest
 
 from mtn_cloud import ClientSettings, MtnCloudClient
 from mtn_cloud.models.instance import InstanceCreate, InstanceUpdate
+from mtn_cloud.models.security_group import SecurityGroupCreate, SecurityGroupRuleCreate
 from mtn_cloud.modern_exceptions import TimeoutError as ModernTimeoutError
 from mtn_cloud.modern_exceptions import AuthenticationError
 from mtn_cloud.transport import HttpResponse
@@ -321,6 +322,7 @@ def test_instance_provision_dry_run_resolves_dependencies() -> None:
         HttpResponse(200, {}, {"instanceTypes": [{"id": 10, "name": "Ubuntu", "code": "ubuntu", "instanceTypeLayouts": [{"id": 20, "name": "default"}]}]}),
         HttpResponse(200, {}, {"data": [{"id": 214, "value": "pool-214", "name": "project-a"}]}),
         HttpResponse(200, {}, {"plans": [{"id": 30, "name": "small"}]}),
+        HttpResponse(200, {}, {"network": {"id": 50, "zone": {"id": 4}, "group": {"id": 621}, "zonePool": {"id": 214}}}),
     ]
     client = MtnCloudClient(token="secret", transport=transport)
 
@@ -358,3 +360,25 @@ def test_networks_service_lists_networks_and_subnets() -> None:
 
     assert network.name == "ubuntu_net"
     assert subnets[0].id == 51
+
+
+def test_security_groups_service_manages_groups_and_rules() -> None:
+    transport = Mock()
+    transport.request.side_effect = [
+        HttpResponse(201, {}, {"securityGroup": {"id": 70, "name": "sdk-test"}}),
+        HttpResponse(201, {}, {"rule": {"id": 71, "name": "allow-ssh", "direction": "ingress"}}),
+    ]
+    client = MtnCloudClient(token="secret", transport=transport)
+
+    group = client.security_groups.create(SecurityGroupCreate(name="sdk-test"))
+    rule = client.security_groups.create_rule(
+        group.id,
+        SecurityGroupRuleCreate(name="allow-ssh", protocol="tcp", port_range="22"),
+    )
+
+    assert group.id == 70
+    assert rule.id == 71
+    assert transport.request.call_args_list[1].args[:2] == (
+        "POST",
+        "/security-groups/70/rules",
+    )

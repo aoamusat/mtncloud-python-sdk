@@ -21,7 +21,7 @@ from mtn_cloud.exceptions import (
     ValidationError,
 )
 
-__author__ = "Marvellous Osuolale"
+__author__ = "Hexcore Ltd"
 __license__ = "MIT"
 __all__ = [
     # Main client
