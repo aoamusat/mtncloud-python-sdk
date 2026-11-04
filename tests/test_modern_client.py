@@ -317,11 +317,10 @@ def test_instances_service_waiter_raises_typed_timeout() -> None:
 def test_instance_provision_dry_run_resolves_dependencies() -> None:
     transport = Mock()
     transport.request.side_effect = [
-        HttpResponse(200, {}, {"groups": [{"id": 621, "name": "project-a", "zones": [{"id": 4}]}]}),
-        HttpResponse(200, {}, {"zone": {"id": 4, "name": "MTNNG_CLOUD_AZ_1"}}),
+        HttpResponse(200, {}, {"groups": [{"id": 621, "name": "project-a", "zones": [{"id": 4, "name": "MTNNG_CLOUD_AZ_1"}]}]}),
         HttpResponse(200, {}, {"instanceTypes": [{"id": 10, "name": "Ubuntu", "code": "ubuntu", "instanceTypeLayouts": [{"id": 20, "name": "default"}]}]}),
-        HttpResponse(200, {}, {"servicePlans": [{"id": 30, "name": "small"}]}),
         HttpResponse(200, {}, {"data": [{"id": 214, "value": "pool-214", "name": "project-a"}]}),
+        HttpResponse(200, {}, {"plans": [{"id": 30, "name": "small"}]}),
     ]
     client = MtnCloudClient(token="secret", transport=transport)
 

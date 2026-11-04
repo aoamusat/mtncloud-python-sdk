@@ -7,6 +7,7 @@ from typing import Any
 from mtn_cloud.core import CoreClient
 from mtn_cloud.models.instance import Instance, InstanceCreate, InstanceUpdate
 from mtn_cloud.models.group import Group
+from mtn_cloud.models.cloud import Cloud
 from mtn_cloud.modern_exceptions import MtnCloudError, TimeoutError
 from mtn_cloud.services.base import Page, Service
 from mtn_cloud.services.groups import GroupsService
@@ -210,12 +211,19 @@ class InstancesService(Service[Instance]):
         zone_model = self._resolve_zone(group_model, zone, zones)
         instance_type = instance_types.get_by_code(type_code)
         layout_id = self._resolve_layout(instance_type, layout)
-        plan_id = self._resolve_plan(plans, plan)
         pool_code = self._resolve_pool(
             resource_pools,
             resource_pool,
             zone_id=zone_model.id,
             group_id=group_model.id,
+        )
+        plan_id = self._resolve_plan(
+            plans,
+            plan,
+            zone_id=zone_model.id,
+            layout_id=layout_id,
+            group_id=group_model.id,
+            resource_pool_id=pool_code,
         )
         cloud_name = zone_model.name or str(zone_model.id)
 
@@ -265,12 +273,26 @@ class InstancesService(Service[Instance]):
         return instance_type.default_layout_id
 
     @staticmethod
-    def _resolve_plan(plans: PlansService, plan: str | int) -> int:
+    def _resolve_plan(
+        plans: PlansService,
+        plan: str | int,
+        *,
+        zone_id: int,
+        layout_id: int,
+        group_id: int,
+        resource_pool_id: str,
+    ) -> int:
         if isinstance(plan, int):
             return plan
         if plan.isdigit():
             return int(plan)
-        return plans.get_by_name(plan).id
+        return plans.get_for_provisioning(
+            plan,
+            zone_id=zone_id,
+            layout_id=layout_id,
+            group_id=group_id,
+            resource_pool_id=resource_pool_id,
+        ).id
 
     @staticmethod
     def _resolve_pool(
@@ -300,6 +322,20 @@ class InstancesService(Service[Instance]):
 
     @staticmethod
     def _resolve_zone(group: Group, zone: str | int | None, zones: ZonesService) -> Any:
+        embedded = [item for item in group.zones if isinstance(item, dict)]
+        if zone is None and embedded:
+            return Cloud.model_validate(embedded[0])
+        if zone is not None:
+            wanted = str(zone)
+            embedded_matches = [
+                item
+                for item in embedded
+                if str(item.get("id")) == wanted or item.get("name") == wanted
+            ]
+            if len(embedded_matches) == 1:
+                return Cloud.model_validate(embedded_matches[0])
+            if len(embedded_matches) > 1:
+                raise ValueError(f"Zone '{zone}' is ambiguous for group '{group.name}'")
         if isinstance(zone, int) or (isinstance(zone, str) and zone.isdigit()):
             return zones.get(int(zone))
         if isinstance(zone, str):

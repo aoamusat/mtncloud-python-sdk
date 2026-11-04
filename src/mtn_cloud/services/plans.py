@@ -3,6 +3,7 @@
 from typing import Any
 
 from mtn_cloud.models.plan import ServicePlan
+from mtn_cloud.modern_exceptions import MtnCloudError
 from mtn_cloud.modern_exceptions import NotFoundError
 from mtn_cloud.services.base import Page, Service
 
@@ -37,4 +38,58 @@ class PlansService(Service[ServicePlan]):
             raise NotFoundError(f"Service plan with name '{name}' not found")
         if len(matches) > 1:
             raise ValueError(f"Service plan name '{name}' is ambiguous")
+        return matches[0]
+
+    def list_for_provisioning(
+        self,
+        *,
+        zone_id: int,
+        layout_id: int,
+        group_id: int,
+        resource_pool_id: str | int,
+    ) -> list[ServicePlan]:
+        """List plans scoped to a tenant's actual provisioning context."""
+
+        resource_pool = str(resource_pool_id)
+        if resource_pool.isdigit():
+            resource_pool = f"pool-{resource_pool}"
+        body = self._core.request(
+            "GET",
+            "/instances/service-plans",
+            params={
+                "zoneId": zone_id,
+                "layoutId": layout_id,
+                "siteId": group_id,
+                "resourcePoolId": resource_pool,
+            },
+        )
+        if not isinstance(body, dict) or not isinstance(body.get("plans"), list):
+            raise MtnCloudError(
+                "Invalid provisioning service-plan response: expected a 'plans' list"
+            )
+        return [ServicePlan.model_validate(item) for item in body["plans"]]
+
+    def get_for_provisioning(
+        self,
+        name: str,
+        *,
+        zone_id: int,
+        layout_id: int,
+        group_id: int,
+        resource_pool_id: str | int,
+    ) -> ServicePlan:
+        matches = [
+            plan
+            for plan in self.list_for_provisioning(
+                zone_id=zone_id,
+                layout_id=layout_id,
+                group_id=group_id,
+                resource_pool_id=resource_pool_id,
+            )
+            if plan.name == name or plan.code == name or str(plan.id) == name
+        ]
+        if not matches:
+            raise NotFoundError(f"Service plan '{name}' not found for this provisioning context")
+        if len(matches) > 1:
+            raise ValueError(f"Service plan '{name}' is ambiguous")
         return matches[0]
