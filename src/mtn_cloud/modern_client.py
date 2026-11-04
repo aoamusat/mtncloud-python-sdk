@@ -89,6 +89,11 @@ class MtnCloudClient:
                 self._core,
                 sleeper=self._sleeper,
                 clock=self._clock,
+                groups=self.groups,
+                zones=self.zones,
+                instance_types=self.instance_types,
+                plans=self.plans,
+                resource_pools=self.resource_pools,
             )
         return self._instances
 

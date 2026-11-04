@@ -3,6 +3,7 @@
 from typing import Any
 
 from mtn_cloud.models.group import Group
+from mtn_cloud.modern_exceptions import NotFoundError
 from mtn_cloud.services.base import Page, Service
 
 
@@ -31,3 +32,11 @@ class GroupsService(Service[Group]):
 
     def get(self, group_id: int) -> Group:
         return self._get(group_id)
+
+    def get_by_name(self, name: str) -> Group:
+        matches = [group for group in self.list(name=name, limit=100) if group.name == name]
+        if not matches:
+            raise NotFoundError(f"Group '{name}' not found")
+        if len(matches) > 1:
+            raise ValueError(f"Group name '{name}' is ambiguous")
+        return matches[0]

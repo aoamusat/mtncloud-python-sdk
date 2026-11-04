@@ -3,6 +3,7 @@
 from typing import Any
 
 from mtn_cloud.models.cloud import Cloud
+from mtn_cloud.modern_exceptions import NotFoundError
 from mtn_cloud.services.base import Page, Service
 
 
@@ -37,3 +38,11 @@ class ZonesService(Service[Cloud]):
 
     def get(self, zone_id: int) -> Cloud:
         return self._get(zone_id)
+
+    def get_by_name(self, name: str) -> Cloud:
+        matches = [zone for zone in self.list(name=name, limit=100) if zone.name == name]
+        if not matches:
+            raise NotFoundError(f"Zone '{name}' not found")
+        if len(matches) > 1:
+            raise ValueError(f"Zone name '{name}' is ambiguous")
+        return matches[0]
