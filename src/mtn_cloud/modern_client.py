@@ -7,6 +7,7 @@ from mtn_cloud.core import CoreClient
 from mtn_cloud.models.user import User
 from mtn_cloud.services.groups import GroupsService
 from mtn_cloud.services.instance_types import InstanceTypesService
+from mtn_cloud.services.instances import InstancesService
 from mtn_cloud.services.plans import PlansService
 from mtn_cloud.services.resource_pools import ResourcePoolsService
 from mtn_cloud.services.zones import ZonesService
@@ -43,6 +44,7 @@ class MtnCloudClient:
         self._zones: ZonesService | None = None
         self._groups: GroupsService | None = None
         self._instance_types: InstanceTypesService | None = None
+        self._instances: InstancesService | None = None
         self._plans: PlansService | None = None
         self._resource_pools: ResourcePoolsService | None = None
 
@@ -73,6 +75,14 @@ class MtnCloudClient:
         if self._instance_types is None:
             self._instance_types = InstanceTypesService(self._core)
         return self._instance_types
+
+    @property
+    def instances(self) -> InstancesService:
+        """Access compute instances."""
+
+        if self._instances is None:
+            self._instances = InstancesService(self._core)
+        return self._instances
 
     @property
     def plans(self) -> PlansService:

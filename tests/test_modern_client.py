@@ -3,6 +3,7 @@ from unittest.mock import Mock
 import pytest
 
 from mtn_cloud import ClientSettings, MtnCloudClient
+from mtn_cloud.models.instance import InstanceCreate, InstanceUpdate
 from mtn_cloud.modern_exceptions import AuthenticationError
 from mtn_cloud.transport import HttpResponse
 
@@ -195,3 +196,61 @@ def test_resource_pools_filter_non_selectable_group_rows() -> None:
         "groupId": 621,
         "provisionTypeCode": "openstack",
     }
+
+
+def test_instances_service_lists_typed_instances() -> None:
+    transport = Mock()
+    transport.request.return_value = HttpResponse(
+        200,
+        {},
+        {"instances": [{"id": 99, "name": "web-01", "status": "running"}]},
+    )
+    client = MtnCloudClient(token="secret", transport=transport)
+
+    instances = client.instances.list(status="running")
+
+    assert instances[0].id == 99
+    assert instances[0].is_running is True
+    assert transport.request.call_args.kwargs["params"] == {
+        "offset": 0,
+        "status": "running",
+    }
+
+
+def test_instances_service_create_serializes_request_model() -> None:
+    transport = Mock()
+    transport.request.return_value = HttpResponse(
+        201,
+        {},
+        {"instance": {"id": 100, "name": "web-01", "status": "provisioning"}},
+    )
+    client = MtnCloudClient(token="secret", transport=transport)
+    request = InstanceCreate(
+        name="web-01",
+        cloud="MTNNG_CLOUD_AZ_1",
+        type="ubuntu-2204",
+        group_id=621,
+        layout=20,
+        plan=30,
+        resource_pool_id="pool-214",
+    )
+
+    instance = client.instances.create(request)
+
+    assert instance.id == 100
+    assert transport.request.call_args.kwargs["json"]["instance"]["site"] == {"id": 621}
+
+
+def test_instances_service_update_uses_put() -> None:
+    transport = Mock()
+    transport.request.return_value = HttpResponse(
+        200,
+        {},
+        {"instance": {"id": 100, "name": "web-renamed", "status": "stopped"}},
+    )
+    client = MtnCloudClient(token="secret", transport=transport)
+
+    instance = client.instances.update(100, InstanceUpdate(name="web-renamed"))
+
+    assert instance.name == "web-renamed"
+    assert transport.request.call_args.args[:2] == ("PUT", "/instances/100")
