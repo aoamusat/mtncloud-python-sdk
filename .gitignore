@@ -119,3 +119,7 @@ config.local.yml
 .envrc
 .direnv/
 
+# IDE specifics
+.vscode/
+.idea/
+
