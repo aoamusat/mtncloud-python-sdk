@@ -96,6 +96,7 @@ class MtnCloudClient:
                 instance_types=self.instance_types,
                 plans=self.plans,
                 resource_pools=self.resource_pools,
+                networks=self.networks,
             )
         return self._instances
 

@@ -46,6 +46,10 @@ class ServerError(MtnCloudError):
     """The service returned a server-side error."""
 
 
+class TransportError(MtnCloudError):
+    """The request could not reach the MTN Cloud API."""
+
+
 class TimeoutError(MtnCloudError):
     """An operation did not reach its target state before its deadline."""
 

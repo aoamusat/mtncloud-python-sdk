@@ -4,6 +4,8 @@ from collections.abc import Mapping
 import time
 from typing import Any
 
+import requests
+
 from mtn_cloud.auth import CredentialProvider, StaticTokenProvider
 from mtn_cloud.modern_exceptions import (
     AuthenticationError,
@@ -11,6 +13,7 @@ from mtn_cloud.modern_exceptions import (
     NotFoundError,
     RateLimitError,
     ServerError,
+    TransportError,
     ValidationError,
 )
 from mtn_cloud.settings import ClientSettings
@@ -48,14 +51,19 @@ class CoreClient:
             if token:
                 request_headers["Authorization"] = f"Bearer {token}"
 
-            response = self.transport.request(
-                method,
-                path,
-                params=params,
-                json=json,
-                headers=request_headers,
-                timeout=timeout,
-            )
+            try:
+                response = self.transport.request(
+                    method,
+                    path,
+                    params=params,
+                    json=json,
+                    headers=request_headers,
+                    timeout=timeout,
+                )
+            except requests.exceptions.Timeout as exc:
+                raise TransportError(f"Request to {path} timed out") from exc
+            except requests.exceptions.RequestException as exc:
+                raise TransportError(f"Request to {path} failed: {exc}") from exc
             if self._should_retry(method, response.status_code, attempt):
                 self._sleeper(self._retry_delay(response, attempt))
                 continue

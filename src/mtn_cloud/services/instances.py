@@ -14,12 +14,14 @@ from mtn_cloud.models.instance import (
 )
 from mtn_cloud.models.group import Group
 from mtn_cloud.models.cloud import Cloud
+from mtn_cloud.models.plan import ServicePlan
 from mtn_cloud.modern_exceptions import MtnCloudError, TimeoutError
 from mtn_cloud.services.base import Page, Service
 from mtn_cloud.services.groups import GroupsService
 from mtn_cloud.services.instance_types import InstanceTypesService
 from mtn_cloud.services.plans import PlansService
 from mtn_cloud.services.resource_pools import ResourcePoolsService
+from mtn_cloud.services.networks import NetworksService
 from mtn_cloud.services.zones import ZonesService
 
 
@@ -42,6 +44,7 @@ class InstancesService(Service[Instance]):
         instance_types: InstanceTypesService | None = None,
         plans: PlansService | None = None,
         resource_pools: ResourcePoolsService | None = None,
+        networks: NetworksService | None = None,
     ) -> None:
         super().__init__(core)
         self._sleeper = sleeper
@@ -51,6 +54,7 @@ class InstancesService(Service[Instance]):
         self._instance_types = instance_types
         self._plans = plans
         self._resource_pools = resource_pools
+        self._networks = networks
 
     def list_page(
         self,
@@ -128,6 +132,7 @@ class InstancesService(Service[Instance]):
         *,
         timeout: float = 300,
         poll_interval: float = 5,
+        on_status: Callable[[Instance], None] | None = None,
     ) -> Instance:
         if timeout <= 0:
             raise ValueError("timeout must be greater than zero")
@@ -138,6 +143,8 @@ class InstancesService(Service[Instance]):
         deadline = self._clock() + timeout
         while True:
             instance = self.get(instance_id)
+            if on_status is not None:
+                on_status(instance)
             current = instance.status.lower()
             if current == target:
                 return instance
@@ -159,12 +166,14 @@ class InstancesService(Service[Instance]):
         *,
         timeout: float = 300,
         poll_interval: float = 5,
+        on_status: Callable[[Instance], None] | None = None,
     ) -> Instance:
         return self.wait_for_status(
             instance_id,
             "running",
             timeout=timeout,
             poll_interval=poll_interval,
+            on_status=on_status,
         )
 
     def wait_until_stopped(
@@ -173,12 +182,14 @@ class InstancesService(Service[Instance]):
         *,
         timeout: float = 300,
         poll_interval: float = 5,
+        on_status: Callable[[Instance], None] | None = None,
     ) -> Instance:
         return self.wait_for_status(
             instance_id,
             "stopped",
             timeout=timeout,
             poll_interval=poll_interval,
+            on_status=on_status,
         )
 
     def provision(
@@ -192,7 +203,8 @@ class InstancesService(Service[Instance]):
         resource_pool: str | int | None = None,
         layout: int | str | None = None,
         wait: bool = True,
-        timeout: float = 600,
+        timeout: float = 1800,
+        poll_interval: float = 10,
         dry_run: bool = False,
         description: str | None = None,
         labels: list[str] | None = None,
@@ -201,6 +213,7 @@ class InstancesService(Service[Instance]):
         create_user: bool = True,
         network_id: int | str | None = None,
         root_volume_size_gb: int | None = 10,
+        progress_callback: Callable[[Instance], None] | None = None,
     ) -> Instance | dict[str, Any]:
         """Resolve provisioning inputs and create an instance."""
 
@@ -210,10 +223,11 @@ class InstancesService(Service[Instance]):
             self._instance_types,
             self._plans,
             self._resource_pools,
+            self._networks,
         )
         if any(service is None for service in services):
             raise RuntimeError("InstancesService provisioning dependencies are not configured")
-        groups, zones, instance_types, plans, resource_pools = services
+        groups, zones, instance_types, plans, resource_pools, networks = services
 
         group_model = groups.get(group) if isinstance(group, int) else groups.get_by_name(group)
         zone_model = self._resolve_zone(group_model, zone, zones)
@@ -225,7 +239,7 @@ class InstancesService(Service[Instance]):
             zone_id=zone_model.id,
             group_id=group_model.id,
         )
-        plan_id = self._resolve_plan(
+        plan_model = self._resolve_plan(
             plans,
             plan,
             zone_id=zone_model.id,
@@ -233,6 +247,21 @@ class InstancesService(Service[Instance]):
             group_id=group_model.id,
             resource_pool_id=pool_code,
         )
+        plan_id = plan_model.id
+        if root_volume_size_gb is not None and plan_model.storage_gb is not None:
+            if root_volume_size_gb > plan_model.storage_gb:
+                raise ValueError(
+                    f"root_volume_size_gb={root_volume_size_gb} exceeds "
+                    f"plan storage {plan_model.storage_gb:g} GB"
+                )
+        if network_id is not None:
+            self._validate_network(
+                networks,
+                network_id,
+                zone_id=zone_model.id,
+                group_id=group_model.id,
+                resource_pool_id=pool_code,
+            )
         cloud_name = zone_model.name or str(zone_model.id)
 
         request = InstanceCreate(
@@ -273,7 +302,16 @@ class InstancesService(Service[Instance]):
             return resolved
 
         instance = self.create(request)
-        return self.wait_until_running(instance.id, timeout=timeout) if wait else instance
+        return (
+            self.wait_until_running(
+                instance.id,
+                timeout=timeout,
+                poll_interval=poll_interval,
+                on_status=progress_callback,
+            )
+            if wait
+            else instance
+        )
 
     @staticmethod
     def _network_reference(network_id: int | str) -> str:
@@ -304,18 +342,79 @@ class InstancesService(Service[Instance]):
         layout_id: int,
         group_id: int,
         resource_pool_id: str,
-    ) -> int:
+    ) -> ServicePlan:
         if isinstance(plan, int):
-            return plan
+            return plans.get_for_provisioning(
+                str(plan),
+                zone_id=zone_id,
+                layout_id=layout_id,
+                group_id=group_id,
+                resource_pool_id=resource_pool_id,
+            )
         if plan.isdigit():
-            return int(plan)
+            return plans.get_for_provisioning(
+                plan,
+                zone_id=zone_id,
+                layout_id=layout_id,
+                group_id=group_id,
+                resource_pool_id=resource_pool_id,
+            )
         return plans.get_for_provisioning(
             plan,
             zone_id=zone_id,
             layout_id=layout_id,
             group_id=group_id,
             resource_pool_id=resource_pool_id,
-        ).id
+        )
+
+    @staticmethod
+    def _validate_network(
+        networks: NetworksService,
+        network_id: int | str,
+        *,
+        zone_id: int,
+        group_id: int,
+        resource_pool_id: str,
+    ) -> None:
+        numeric_id = int(str(network_id).removeprefix("network-"))
+        network = networks.get(numeric_id)
+        if network.cloud_id not in (None, zone_id):
+            raise ValueError(
+                f"Network {numeric_id} belongs to zone {network.cloud_id}, not zone {zone_id}"
+            )
+        if network.group and network.group.id not in (None, group_id):
+            raise ValueError(
+                f"Network {numeric_id} belongs to group {network.group.id}, not group {group_id}"
+            )
+        expected_pool = int(resource_pool_id.removeprefix("pool-"))
+        if network.zone_pool and network.zone_pool.id not in (None, expected_pool):
+            raise ValueError(
+                f"Network {numeric_id} belongs to resource pool {network.zone_pool.id}, "
+                f"not {resource_pool_id}"
+            )
+
+    def wait_until_deleted(
+        self,
+        instance_id: int,
+        *,
+        timeout: float = 300,
+        poll_interval: float = 5,
+    ) -> bool:
+        deadline = self._clock() + timeout
+        while True:
+            try:
+                self.get(instance_id)
+            except Exception as exc:
+                if getattr(exc, "status_code", None) == 404:
+                    return True
+                raise
+            remaining = deadline - self._clock()
+            if remaining <= 0:
+                raise TimeoutError(
+                    f"Timed out waiting for instance {instance_id} to be deleted",
+                    timeout=timeout,
+                )
+            self._sleeper(min(poll_interval, remaining))
 
     @staticmethod
     def _resolve_pool(
