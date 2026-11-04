@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "mtn-cloud"
+name = "mtncloud-python-sdk"
 version = "0.1.0"
 description = "Production-grade Python SDK for MTN Cloud"
 readme = "README.md"
@@ -17,7 +17,7 @@ maintainers = [
 keywords = [
     "mtn",
     "cloud",
-    "mtn-cloud",
+    "mtncloud-python-sdk",
     "sdk",
     "api",
     "infrastructure",

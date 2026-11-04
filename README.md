@@ -5,6 +5,8 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 A typed, synchronous Python SDK for the [MTN Cloud Console API](https://console.cloud.mtn.ng/documentation/).
+The package is published as `mtncloud-python-sdk` and imported in Python as
+`mtn_cloud`.
 It provides a small, explicit client for tenant discovery, compute instance
 management, networking, security groups, and long-running provisioning
 operations.
@@ -40,13 +42,13 @@ operations.
 Install the published package with `uv`:
 
 ```bash
-uv add mtn-cloud
+uv add mtncloud-python-sdk
 ```
 
 Or with pip:
 
 ```bash
-python -m pip install mtn-cloud
+python -m pip install mtncloud-python-sdk
 ```
 
 For a checkout of this repository, install the development dependencies with:
