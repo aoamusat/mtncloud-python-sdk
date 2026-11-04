@@ -5,7 +5,13 @@ from collections.abc import Callable
 from typing import Any
 
 from mtn_cloud.core import CoreClient
-from mtn_cloud.models.instance import Instance, InstanceCreate, InstanceUpdate
+from mtn_cloud.models.instance import (
+    Instance,
+    InstanceCreate,
+    InstanceNetwork,
+    InstanceUpdate,
+    InstanceVolume,
+)
 from mtn_cloud.models.group import Group
 from mtn_cloud.models.cloud import Cloud
 from mtn_cloud.modern_exceptions import MtnCloudError, TimeoutError
@@ -193,6 +199,8 @@ class InstancesService(Service[Instance]):
         tags: dict[str, str] | None = None,
         security_group: str = "default",
         create_user: bool = True,
+        network_id: int | str | None = None,
+        root_volume_size_gb: int | None = 10,
     ) -> Instance | dict[str, Any]:
         """Resolve provisioning inputs and create an instance."""
 
@@ -240,6 +248,16 @@ class InstancesService(Service[Instance]):
             tags=tags or {},
             security_group=security_group,
             create_user=create_user,
+            network_interfaces=(
+                [InstanceNetwork(network_id=self._network_reference(network_id))]
+                if network_id is not None
+                else []
+            ),
+            volumes=(
+                [InstanceVolume(name="root", size=root_volume_size_gb)]
+                if root_volume_size_gb is not None
+                else []
+            ),
         )
         resolved = {
             "name": name,
@@ -256,6 +274,11 @@ class InstancesService(Service[Instance]):
 
         instance = self.create(request)
         return self.wait_until_running(instance.id, timeout=timeout) if wait else instance
+
+    @staticmethod
+    def _network_reference(network_id: int | str) -> str:
+        value = str(network_id).strip()
+        return value if value.startswith("network-") else f"network-{value}"
 
     @staticmethod
     def _resolve_layout(instance_type: Any, layout: int | str | None) -> int:

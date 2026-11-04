@@ -41,7 +41,7 @@ class InstanceVolume(BaseModel):
 class InstanceNetwork(BaseModel):
     """Network interface configuration for an instance."""
 
-    id: int | None = None
+    id: int | str | None = None
     network_id: str | None = Field(
         default=None, alias="networkId", description="Network ID (e.g., 'network-298')"
     )

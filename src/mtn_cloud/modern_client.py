@@ -9,6 +9,7 @@ from mtn_cloud.models.user import User
 from mtn_cloud.services.groups import GroupsService
 from mtn_cloud.services.instance_types import InstanceTypesService
 from mtn_cloud.services.instances import InstancesService
+from mtn_cloud.services.networks import NetworksService
 from mtn_cloud.services.plans import PlansService
 from mtn_cloud.services.resource_pools import ResourcePoolsService
 from mtn_cloud.services.zones import ZonesService
@@ -49,6 +50,7 @@ class MtnCloudClient:
         self._groups: GroupsService | None = None
         self._instance_types: InstanceTypesService | None = None
         self._instances: InstancesService | None = None
+        self._networks: NetworksService | None = None
         self._plans: PlansService | None = None
         self._resource_pools: ResourcePoolsService | None = None
 
@@ -96,6 +98,14 @@ class MtnCloudClient:
                 resource_pools=self.resource_pools,
             )
         return self._instances
+
+    @property
+    def networks(self) -> NetworksService:
+        """Access tenant network discovery."""
+
+        if self._networks is None:
+            self._networks = NetworksService(self._core)
+        return self._networks
 
     @property
     def plans(self) -> PlansService:

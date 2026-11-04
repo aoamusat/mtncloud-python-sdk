@@ -330,6 +330,7 @@ def test_instance_provision_dry_run_resolves_dependencies() -> None:
         group="project-a",
         plan="small",
         dry_run=True,
+        network_id=50,
     )
 
     assert resolved == {
@@ -342,3 +343,18 @@ def test_instance_provision_dry_run_resolves_dependencies() -> None:
         "plan": 30,
         "resource_pool_id": "pool-214",
     }
+
+
+def test_networks_service_lists_networks_and_subnets() -> None:
+    transport = Mock()
+    transport.request.side_effect = [
+        HttpResponse(200, {}, {"networks": [{"id": 50, "name": "ubuntu_net", "cidr": "10.0.0.0/24"}]}),
+        HttpResponse(200, {}, {"subnets": [{"id": 51, "cidr": "10.0.0.0/24"}]}),
+    ]
+    client = MtnCloudClient(token="secret", transport=transport)
+
+    network = client.networks.list(zone_id=4)[0]
+    subnets = client.networks.list_subnets(network.id)
+
+    assert network.name == "ubuntu_net"
+    assert subnets[0].id == 51
