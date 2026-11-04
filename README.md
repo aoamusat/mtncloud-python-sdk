@@ -328,6 +328,30 @@ uv build
 git diff --check
 ```
 
+## Release process
+
+Releases are tag-driven and publish the exact distributions produced by CI.
+To prepare a release:
+
+1. Update `version` in `pyproject.toml`.
+2. Move the completed entries in `CHANGELOG.md` into a new version section.
+3. Run the unit, quality, and build checks locally.
+4. Commit the release preparation changes.
+5. Create and push an annotated tag matching the package version, for example:
+
+   ```bash
+   git tag -a v0.2.0 -m "Release v0.2.0"
+   git push origin v0.2.0
+   ```
+
+The release workflow verifies that the tag matches `pyproject.toml`, runs the
+full quality gate, builds and validates the distributions, creates a GitHub
+Release, attaches the artifacts, and publishes them to PyPI using trusted
+publishing. Manual workflow dispatch is restricted to TestPyPI validation.
+
+See [`docs/releasing.md`](docs/releasing.md) for the maintainer checklist and
+GitHub environment requirements.
+
 ## Compatibility and scope
 
 This project targets the MTN Cloud Console API at
