@@ -125,3 +125,47 @@ def test_groups_service_gets_wrapped_resource() -> None:
 
     assert group.id == 7
     assert group.name == "project-a"
+
+
+def test_instance_types_service_parses_layouts() -> None:
+    transport = Mock()
+    transport.request.return_value = HttpResponse(
+        200,
+        {},
+        {
+            "instanceTypes": [
+                {
+                    "id": 10,
+                    "name": "Ubuntu 22.04",
+                    "code": "ubuntu-2204",
+                    "instanceTypeLayouts": [{"id": 20, "name": "Ubuntu layout"}],
+                }
+            ],
+            "meta": {"total": 1},
+        },
+    )
+    client = MtnCloudClient(token="secret", transport=transport)
+
+    instance_type = client.instance_types.get_by_code("ubuntu-2204")
+
+    assert instance_type.default_layout_id == 20
+    assert instance_type.layouts[0].name == "Ubuntu layout"
+
+
+def test_plans_service_parses_resource_sizes() -> None:
+    transport = Mock()
+    transport.request.return_value = HttpResponse(
+        200,
+        {},
+        {
+            "servicePlans": [
+                {"id": 30, "name": "small", "maxCores": 2, "maxMemory": 4294967296}
+            ]
+        },
+    )
+    client = MtnCloudClient(token="secret", transport=transport)
+
+    plan = client.plans.get_by_name("small")
+
+    assert plan.cores == 2
+    assert plan.memory_gb == 4

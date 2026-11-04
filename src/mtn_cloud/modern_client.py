@@ -6,6 +6,8 @@ from mtn_cloud.auth import CredentialProvider
 from mtn_cloud.core import CoreClient
 from mtn_cloud.models.user import User
 from mtn_cloud.services.groups import GroupsService
+from mtn_cloud.services.instance_types import InstanceTypesService
+from mtn_cloud.services.plans import PlansService
 from mtn_cloud.services.zones import ZonesService
 from mtn_cloud.settings import ClientSettings
 from mtn_cloud.transport import Transport
@@ -39,6 +41,8 @@ class MtnCloudClient:
         )
         self._zones: ZonesService | None = None
         self._groups: GroupsService | None = None
+        self._instance_types: InstanceTypesService | None = None
+        self._plans: PlansService | None = None
 
     @property
     def settings(self) -> ClientSettings:
@@ -59,6 +63,22 @@ class MtnCloudClient:
         if self._groups is None:
             self._groups = GroupsService(self._core)
         return self._groups
+
+    @property
+    def instance_types(self) -> InstanceTypesService:
+        """Access instance templates and their layouts."""
+
+        if self._instance_types is None:
+            self._instance_types = InstanceTypesService(self._core)
+        return self._instance_types
+
+    @property
+    def plans(self) -> PlansService:
+        """Access compute service plans."""
+
+        if self._plans is None:
+            self._plans = PlansService(self._core)
+        return self._plans
 
     def whoami(self) -> User:
         """Return the authenticated control-plane user."""
