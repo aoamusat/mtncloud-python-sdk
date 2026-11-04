@@ -1,0 +1,4 @@
+/.github/workflows/ @aoamusat
+/.github/dependabot.yml @aoamusat
+/pyproject.toml @aoamusat
+/src/mtn_cloud/ @aoamusat

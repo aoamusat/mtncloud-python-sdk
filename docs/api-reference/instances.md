@@ -1,0 +1,258 @@
+# Resource: `cloud.instances` (`InstancesResource`)
+
+### `list(max_results=None, offset=0, sort=None, direction=None, phrase=None, name=None, status=None, cloud_id=None, group_id=None, labels=None, **filters) -> list[Instance]`
+
+- Endpoint: `GET /api/instances`
+- Parameters:
+    - Shared list args (see [API Reference](./index.md#shared-list-query-arguments))
+    - `name`: exact name filter
+    - `status`: status filter
+    - `cloud_id`: mapped to query `zoneId`
+    - `group_id`: mapped to query `siteId`
+    - `labels`: list mapped to comma-delimited query `labels`
+- Returns: `list[Instance]`
+- Raises: common API exceptions
+
+### `get(instance_id: int) -> Instance`
+
+- Endpoint: `GET /api/instances/{instance_id}`
+- Parameters:
+    - `instance_id`: instance numeric ID
+- Returns: `Instance`
+- Raises: common API exceptions
+
+### `get_by_name(name: str) -> Instance`
+
+- Endpoint sequence:
+    - `GET /api/instances?name=<name>&max=1`
+- Parameters:
+    - `name`: instance name
+- Returns: `Instance`
+- Raises:
+    - common API exceptions
+    - `NotFoundError` when no instance matches
+
+### `create(name: str, *, cloud: str, type: str, group: str, layout: int, plan: int, resource_pool_id: str | int, description=None, environment=None, labels=None, tags=None, copies=1, layout_size=1, availability_zone=None, security_group="default", os_external_network_id=None, create_user=True, workflow_id=None, shutdown_days=None, expire_days=None, create_backup=None, security_groups=None, ports=None, volumes=None, network_interfaces=None, options=None) -> Instance`
+
+- Endpoint sequence:
+    - `GET /api/groups?name=<group>&max=1` (resolve group name to `group_id`)
+    - `POST /api/instances`
+- Parameters:
+    - Required core fields:
+        - `name`: new instance name
+        - `cloud`: cloud/zone name (example: `MTNNG_CLOUD_AZ_1`)
+        - `type`: instance type code (example: `MTN-CS10`)
+        - `group`: group/site name (resolved to ID)
+        - `layout`: layout ID
+        - `plan`: service plan ID
+        - `resource_pool_id`: resource pool code (`"pool-214"`) or numeric ID (`214`); both normalize to the code. Discover with `list_resource_pools()` / `get_resource_pool()`
+    - Optional metadata:
+        - `description`, `environment`, `labels`, `tags`
+    - Optional sizing/provisioning:
+        - `copies`, `layout_size`
+    - Optional MTN/OpenStack-specific provisioning:
+        - `availability_zone`, `security_group`, `os_external_network_id`, `create_user`
+    - Optional automation:
+        - `workflow_id`, `shutdown_days`, `expire_days`, `create_backup`
+    - Optional networking/storage details:
+        - `security_groups`, `ports`, `volumes`, `network_interfaces`, `options`
+- Returns: `Instance`
+- Raises:
+    - common API exceptions
+    - `NotFoundError` when `group` cannot be resolved
+
+### `provision(name: str, *, type: str, group: str, plan: str | int, resource_pool=None, cloud=None, availability_zone=None, security_group="default", wait=True, timeout=600, dry_run=False, **create_kwargs) -> Instance | dict`
+
+Guided wrapper over `create()` that resolves IDs from names.
+
+- Endpoint sequence:
+    - `GET /api/groups?name=<group>` (resolve group → `cloud_ids`)
+    - `GET /api/instance-types?code=<type>` (resolve `layout` via `default_layout_id`)
+    - `GET /api/instances/service-plans` (resolve `plan` name → ID, unless `plan` is an int)
+    - `GET /api/options/zonePools` (resolve/auto-select `resource_pool`, unless given as int)
+    - `POST /api/instances`, then polls `GET /api/instances/{id}` when `wait=True`
+- Parameters:
+    - `type`: instance type code; its `default_layout_id` becomes `layout`
+    - `group`: group name; also used as `cloud` unless `cloud` is given
+    - `plan`: plan name (resolved against the live list) or numeric ID
+    - `resource_pool`: pool name, code, or numeric ID. If omitted, the group's single pool is used; if it has several, a `ValidationError` lists them
+    - `cloud`: cloud/zone name; defaults to `group`
+    - `wait`: block until running (default `True`)
+    - `timeout`: max seconds to wait when `wait=True`
+    - `dry_run`: return the resolved config dict instead of creating
+    - `**create_kwargs`: forwarded to `create()` (labels, tags, volumes, network_interfaces, ports, …)
+- Returns: the created `Instance` (running if `wait=True`), or a config `dict` when `dry_run=True`
+- Raises:
+    - `NotFoundError` when the group or instance type can't be resolved
+    - `ValidationError` when the plan or resource pool can't be resolved
+
+### `update(instance_id: int, name=None, description=None, labels=None) -> Instance`
+
+- Endpoint: `PUT /api/instances/{instance_id}`
+- Parameters:
+    - `instance_id`: target instance ID
+    - `name`: replacement name
+    - `description`: replacement description
+    - `labels`: replacement labels list
+- Returns: `Instance`
+- Raises: common API exceptions
+
+### `delete(instance_id: int, preserve_volumes=False, force=False) -> bool`
+
+- Endpoint: `DELETE /api/instances/{instance_id}`
+- Parameters:
+    - `instance_id`: target instance ID
+    - `preserve_volumes`: adds query `preserveVolumes=on`
+    - `force`: adds query `force=on`
+- Returns: `True` on successful deletion request
+- Raises: common API exceptions
+
+### `start(instance_id: int) -> Instance`
+
+- Endpoint sequence:
+    - `PUT /api/instances/{instance_id}/start`
+    - `GET /api/instances/{instance_id}`
+- Returns: refreshed `Instance`
+- Raises: common API exceptions
+
+### `stop(instance_id: int) -> Instance`
+
+- Endpoint sequence:
+    - `PUT /api/instances/{instance_id}/stop`
+    - `GET /api/instances/{instance_id}`
+- Returns: refreshed `Instance`
+- Raises: common API exceptions
+
+### `restart(instance_id: int) -> Instance`
+
+- Endpoint sequence:
+    - `PUT /api/instances/{instance_id}/restart`
+    - `GET /api/instances/{instance_id}`
+- Returns: refreshed `Instance`
+- Raises: common API exceptions
+
+### `suspend(instance_id: int) -> Instance`
+
+- Endpoint sequence:
+    - `PUT /api/instances/{instance_id}/suspend`
+    - `GET /api/instances/{instance_id}`
+- Returns: refreshed `Instance`
+- Raises: common API exceptions
+
+### `resize(instance_id: int, plan_id: int) -> Instance`
+
+- Endpoint sequence:
+    - `PUT /api/instances/{instance_id}/resize`
+    - `GET /api/instances/{instance_id}`
+- Parameters:
+    - `plan_id`: new service plan ID
+- Returns: resized `Instance`
+- Raises: common API exceptions
+
+### `wait_for_status(instance_id: int, target_status: str, timeout: int = 300, poll_interval: int = 5) -> Instance`
+
+Client-side polling helper.
+
+- Endpoint sequence:
+    - repeated `GET /api/instances/{instance_id}` until target status or timeout
+- Parameters:
+    - `target_status`: desired status string (`running`, `stopped`, etc.)
+    - `timeout`: max wait in seconds
+    - `poll_interval`: sleep interval between polls
+- Returns: `Instance` once target status matches
+- Raises:
+    - common API exceptions from internal `get`
+    - `TimeoutError` when timeout is exceeded
+    - `RuntimeError` if instance enters `failed` state
+
+### `wait_until_running(instance_id: int, timeout: int = 300) -> Instance`
+
+- Endpoint behavior: same as `wait_for_status(..., target_status="running")`
+- Returns: `Instance`
+- Raises: same as `wait_for_status`
+
+### `wait_until_stopped(instance_id: int, timeout: int = 300) -> Instance`
+
+- Endpoint behavior: same as `wait_for_status(..., target_status="stopped")`
+- Returns: `Instance`
+- Raises: same as `wait_for_status`
+
+### `get_console(instance_id: int) -> dict[str, Any]`
+
+- Endpoint: `GET /api/instances/{instance_id}/console`
+- Returns: raw console payload (`url`, credentials, metadata)
+- Raises: common API exceptions
+
+### `get_history(instance_id: int, max_results: int | None = None) -> list[dict[str, Any]]`
+
+- Endpoint: `GET /api/instances/{instance_id}/history`
+- Parameters:
+    - `max_results`: maps to query `max`
+- Returns: list from response key `processes`
+- Raises: common API exceptions
+
+---
+
+## Snapshot management
+
+### `list_snapshots(instance_id: int) -> list[Snapshot]`
+
+- Endpoint: `GET /api/instances/{instance_id}/snapshots`
+- Returns: `list[Snapshot]`
+- Raises: common API exceptions
+
+### `create_snapshot(instance_id: int, name: str, *, description=None) -> Snapshot`
+
+- Endpoint: `POST /api/instances/{instance_id}/snapshots`
+- Parameters:
+    - `name`: snapshot name
+    - `description`: optional description
+- Returns: `Snapshot`
+- Raises: common API exceptions
+
+### `revert_snapshot(instance_id: int, snapshot_id: int) -> bool`
+
+- Endpoint: `PUT /api/instances/{instance_id}/revert-snapshot/{snapshot_id}`
+- The instance should be stopped before reverting
+- Returns: `True` when revert is initiated
+- Raises: common API exceptions
+
+### `delete_snapshot(instance_id: int, snapshot_id: int) -> bool`
+
+- Endpoint: `DELETE /api/instances/{instance_id}/snapshots/{snapshot_id}`
+- Returns: `True` on success
+- Raises: common API exceptions
+
+---
+
+## Provisioning discovery
+
+These helpers resolve the IDs and codes required by `create()` using permission-safe endpoints (the admin-level `clouds`/`plans` endpoints are restricted on most accounts).
+
+### `list_resource_pools(group=None, *, cloud_id=None, group_id=None, provision_type_code="openstack") -> list[ResourcePool]`
+
+- Endpoint: `GET /api/options/zonePools?cloudId={cloud_id}&groupId={group_id}`
+- A resource pool is where an instance is hosted; its `code` is the `resource_pool_id` for `create()`
+- Parameters:
+    - `group`: group name or ID — when given, `cloud_id` and `group_id` are resolved from it automatically (the group embeds its cloud/zone IDs)
+    - `cloud_id` / `group_id`: explicit IDs, required if `group` is not given
+    - `provision_type_code`: provisioning type, defaults to `"openstack"`
+- Returns: `list[ResourcePool]` (group-header rows are filtered out)
+- Raises: `ValueError` if neither `group` nor both `cloud_id`/`group_id` are provided, or the group has no associated cloud
+
+### `get_resource_pool(name: str, *, group=None, cloud_id=None, group_id=None, provision_type_code="openstack") -> ResourcePool`
+
+- Fetches a single pool by display name **or** code (e.g. `"pool-214"`)
+- Same resolution rules as `list_resource_pools`
+- Returns: `ResourcePool`
+- Raises: `NotFoundError` if no pool matches `name`
+
+### `list_service_plans(zone_id=None, layout_id=None, group_id=None, *, resource_pool_id=None) -> list[dict[str, Any]]`
+
+- Endpoint: `GET /api/instances/service-plans?zoneId={zone_id}&layoutId={layout_id}&siteId={group_id}&resourcePoolId={pool_code}`
+- Returns available service plans (CPU/memory/storage tiers) scoped to the provisioning context
+- `zone_id` and `layout_id` are required by the API; use the discovered cloud and `instance_type.default_layout_id`
+- `resource_pool_id` accepts a numeric pool ID or its `pool-...` code. MTN OpenStack layouts require it; omitting it can return HTTP 500. `provision()` resolves the selected pool before plan discovery.
+- Returns: list of plan dicts from response key `plans`
+
+**`ResourcePool` model fields:** `id` (numeric), `code` (alias of API `value`, e.g. `"pool-214"`), `name`, `external_id` (OpenStack pool ID), `is_default`.
