@@ -26,6 +26,8 @@ class ClientSettings(BaseSettings):
     base_url: str = Field(default=DEFAULT_BASE_URL)
     api_prefix: str = Field(default="/api")
     token: SecretStr | None = Field(default=None)
+    api_key: SecretStr | None = Field(default=None)
+    api_refresh_token: SecretStr | None = Field(default=None)
     timeout: float = Field(default=30.0, gt=0, le=300)
     max_retries: int = Field(default=3, ge=0, le=10)
     retry_delay: float = Field(default=0.5, ge=0, le=60)
@@ -65,4 +67,6 @@ class ClientSettings(BaseSettings):
     def token_value(self) -> str | None:
         """Return the token only when a transport explicitly needs it."""
 
-        return self.token.get_secret_value() if self.token is not None else None
+        if self.token is not None:
+            return self.token.get_secret_value()
+        return self.api_key.get_secret_value() if self.api_key is not None else None
